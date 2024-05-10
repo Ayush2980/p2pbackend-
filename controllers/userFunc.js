@@ -82,6 +82,15 @@ module.exports = {
         catch(e){
             next(e);
         }
+    },
+    getUserPlaylist : async(req ,res) => {
+        try{
+            const {playlist} = await userSchema.findById({_id : req.user._id}).populate('playlist');
+            res.send({playlist});
+        }
+        catch(e){
+            next(e);
+        }
     }
     
 }

@@ -34,17 +34,13 @@ main()
     console.log(e);
   });
 async function main() {
-  // await mongoose.connect(
-  // "mongodb+srv://threesigmas:HelloLadies@cluster0.ddsxkao.mongodb.net/"
-  // );
-  mongoose.connect("mongodb://127.0.0.1:27017/ppusher");
+  await mongoose.connect(
+  "mongodb+srv://threesigmas:HelloLadies@cluster0.ddsxkao.mongodb.net/"
+  );
+  // mongoose.connect("mongodb://127.0.0.1:27017/ppusher");
 }
 
 //middlewares
-const corsOptions = {
-  origin: "http://localhost:3000",
-  credentials: true,
-};
 app.use(bodyParser.json());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -53,7 +49,7 @@ app.use(flash());
 app.use(cors());
 app.use(
   session({
-    secret: process.env.GOOGLE_SESSION_SECRET,
+    secret: "marmick",
     resave: false,
     saveUninitialized: false,
     cookie: {
@@ -76,19 +72,20 @@ const io = new Server(server, {
 io.on("connection", async (socket) => {
   console.log("User connected ", socket.id);
   socket.join(socket.id);
-  socket.on("checkSeed" , async() => {
+  socket.on("checkSeed" , async({songName}) => {
+    console.log(songName);
     const sizeof = await roomSchema.find({});
-    socket.emit("seedSize", {sizeOf : sizeof.length});     
+    const songData = await songSchema.findOne({track : songName});
+    socket.emit("seedSize", {sizeOf : sizeof.length , track : songData.track});     
   });
-  socket.on("addSong" , async({splittedAudio}) => {
+  socket.on("addSong" , async({splittedAudio , track}) => {
     let i = 0;
     console.log("Add Song request from " , socket.id);
     const allRooms = await roomSchema.find({});
-    allRooms.forEach((e) => {
-      io.to(e.socketid).emit(`hello`, {msg : `request for a song from ${socket.id} to ${e.socketid}` , data : splittedAudio[i]});
+    splittedAudio.forEach((e) => {
+      io.to(allRooms[i].socketid).emit(`hello`, {msg : `request for a song from ${socket.id} to ${allRooms[i].socketid}` , data : e , track})
       i++;
     })
-
   })
   socket.on("userConnected", async({userId , count}) => {
     const findUser = await userSchema.findById(userId);
